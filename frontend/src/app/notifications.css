@@ -1,0 +1,22 @@
+.notification-dock { position:fixed; right:20px; bottom:132px; z-index:69; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.notification-trigger { min-height:48px; display:inline-flex; align-items:center; gap:8px; padding:0 13px; border:1px solid rgba(162,220,255,.32); border-radius:16px; color:#ecfaff; background:linear-gradient(135deg,rgba(70,190,234,.25),rgba(130,75,210,.3)),rgba(14,23,43,.94); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 14px 38px rgba(0,0,0,.35); backdrop-filter:blur(18px); font-size:11px; font-weight:800; white-space:nowrap; }
+.notification-trigger strong { min-width:20px; height:20px; display:grid; place-items:center; border-radius:999px; color:#07111e; background:var(--cyan); font-size:9px; }
+.announcement-toast,.announcement-panel { width:min(400px,calc(100vw - 28px)); border:1px solid rgba(255,210,91,.38); border-radius:19px; color:var(--text); background:linear-gradient(135deg,rgba(69,62,37,.92),rgba(45,22,43,.94)),#10172a; box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 20px 56px rgba(0,0,0,.48); backdrop-filter:blur(22px); }
+.announcement-toast { position:relative; display:grid; grid-template-columns:auto 1fr; gap:10px; padding:14px 42px 14px 14px; animation:announcement-in .24s ease-out; }
+.announcement-icon { width:36px; height:36px; display:grid; place-items:center; flex:none; border:1px solid rgba(255,229,140,.3); border-radius:12px; color:#ffe98f; background:linear-gradient(135deg,rgba(255,215,92,.2),rgba(81,216,255,.12)); box-shadow:0 0 18px rgba(255,208,70,.12); }
+.announcement-heading { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; }
+.announcement-heading strong { font-size:12px; color:#d9f8ff; }.announcement-heading time { color:#dba5d6; font-size:8px; font-weight:800; }
+.announcement-toast p,.announcement-list p { margin:5px 0 0; color:#d1d9e8; font-size:10px; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; }
+.announcement-toast>div>button { min-height:31px; display:inline-flex; align-items:center; gap:5px; margin-top:9px; padding:0 9px; border:1px solid rgba(193,224,255,.2); border-radius:10px; color:#dff7ff; background:rgba(255,255,255,.06); font-size:9px; font-weight:800; white-space:nowrap; }
+.announcement-close { position:absolute; top:10px; right:10px; width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:10px; color:#bdc8da; background:rgba(255,255,255,.07); }
+.announcement-panel { overflow:hidden; border-color:rgba(147,213,255,.28); background:rgba(11,18,35,.97); }
+.announcement-panel>header { min-height:52px; display:flex; align-items:center; justify-content:space-between; padding:8px 10px 8px 14px; border-bottom:1px solid rgba(255,255,255,.08); }
+.announcement-panel>header>div { display:flex; align-items:center; gap:8px; }.announcement-panel>header span { font-size:12px; font-weight:800; }.announcement-panel>header strong { color:var(--cyan-soft); font-size:8px; }
+.announcement-panel>header button { width:32px; height:32px; display:grid; place-items:center; border:0; border-radius:10px; color:#bdc8da; background:rgba(255,255,255,.06); }
+.announcement-list { max-height:min(400px,55vh); overflow:auto; padding:8px; overscroll-behavior:contain; }
+.announcement-list article { display:grid; grid-template-columns:auto 1fr; gap:9px; padding:11px; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.035); }
+.announcement-list article .announcement-icon { width:34px; height:34px; border-radius:11px; }
+.announcement-list article+article { margin-top:7px; }.announcement-list article:first-child { border-color:rgba(255,216,91,.2); background:rgba(255,210,75,.045); }
+@keyframes announcement-in { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+@media (max-width:760px) { .notification-dock { right:12px; bottom:78px; }.notification-trigger span { display:none; }.announcement-toast,.announcement-panel { width:min(380px,calc(100vw - 24px)); }.announcement-list { max-height:52vh; } }
+@media (prefers-reduced-motion:reduce) { .announcement-toast { animation:none; } }

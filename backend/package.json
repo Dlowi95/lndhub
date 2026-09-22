@@ -1,0 +1,49 @@
+{
+  "name": "gemini-hub-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Gemini Pro API Store",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": "^22.22.3 || >=24.15.0"
+  },
+  "scripts": {
+    "build": "nest build",
+    "test:commerce": "npm run build && node ../tools/test-commerce-foundation.mjs",
+    "start": "node dist/main",
+    "start:local": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "seed:chatgpt": "node scripts/seed-chatgpt.mjs",
+    "seed:reference:dry": "node scripts/seed-reference-catalog.mjs",
+    "seed:reference": "node scripts/seed-reference-catalog.mjs --apply",
+    "catalog:sync:dry": "node scripts/sync-public-catalog.mjs",
+    "catalog:sync": "node scripts/sync-public-catalog.mjs --apply",
+    "catalog:cleanup:dry": "node scripts/cleanup-catalog.mjs",
+    "catalog:cleanup": "node scripts/cleanup-catalog.mjs --apply"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.0.3",
+    "@nestjs/config": "^12.0.0",
+    "@nestjs/core": "^12.0.3",
+    "@nestjs/mongoose": "^12.0.0",
+    "@nestjs/platform-express": "^12.0.3",
+    "@nestjs/throttler": "^6.7.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "google-auth-library": "^11.1.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^8.3.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.3",
+    "@nestjs/schematics": "^12.0.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}

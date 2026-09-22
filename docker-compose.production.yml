@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4000
+      MONGODB_URI: ${MONGODB_URI}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+      GIFT_ENCRYPTION_KEY: ${GIFT_ENCRYPTION_KEY}
+      INVENTORY_ENCRYPTION_KEY: ${INVENTORY_ENCRYPTION_KEY}
+      ORDER_LOOKUP_SECRET: ${ORDER_LOOKUP_SECRET}
+      DELIVERY_ENCRYPTION_KEY: ${DELIVERY_ENCRYPTION_KEY}
+      BANK_ID: ${BANK_ID}
+      BANK_NAME: ${BANK_NAME}
+      ACCOUNT_NO: ${ACCOUNT_NO}
+      ACCOUNT_NAME: ${ACCOUNT_NAME}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+      TRUST_CLOUDFLARE_HEADERS: ${TRUST_CLOUDFLARE_HEADERS:-false}
+      ENABLE_CHECKOUT: "false"
+      ENABLE_PAYMENT_SIMULATION: "false"
+      ENABLE_DEMO_SEED: "false"
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"

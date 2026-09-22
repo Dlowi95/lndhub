@@ -1,0 +1,32 @@
+# Dependencies and generated builds
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+frontend/.next/
+**/.next/
+*.tsbuildinfo
+coverage/
+
+# Local environment and secrets
+/.env
+/.env.*
+!/.env.production.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Local agent tooling and visual test outputs
+/.agent/
+/.agents/
+/artifacts/
+__pycache__/
+*.pyc
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db

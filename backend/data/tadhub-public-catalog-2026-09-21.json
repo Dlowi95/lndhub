@@ -1,0 +1,642 @@
+{
+  "sourceUrl": "https://www.tadhub.store/api/products",
+  "capturedAt": "2026-09-21T05:59:20.113Z",
+  "productCount": 47,
+  "products": [
+    {
+      "id": 22,
+      "name": "ChatGPT Plus dùng chung 5 ngày (chat + codex) BH Full",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 2,
+        "name": "ChatGPT Plus dùng chung",
+        "sortOrder": 1,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT Plus dùng chung 5 ngày (chat + codex) BH Full (đặt trước)",
+        "sortOrder": 0,
+        "isActive": true
+      }
+    },
+    {
+      "id": 10,
+      "name": "Gemini Pro 18 Tháng (thêm vào email của bạn)",
+      "categoryName": "Gemini",
+      "quantityPricingMode": "tiered",
+      "quantityTiers": [
+        {
+          "quantity": 2
+        },
+        {
+          "quantity": 5
+        },
+        {
+          "quantity": 10
+        }
+      ],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 2,
+      "name": "ChatGPT Plus 1 tháng cá nhân KBH (die <2 ngày refund 50k )",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT Plus 1 tháng cá nhân KBH",
+        "sortOrder": 0,
+        "isActive": true
+      }
+    },
+    {
+      "id": 3,
+      "name": "ChatGPT FREE + 250 tín dụng CODEX+ đã ver sẵn số chỉ việc dùng",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "tiered",
+      "quantityTiers": [
+        {
+          "quantity": 2
+        },
+        {
+          "quantity": 5
+        },
+        {
+          "quantity": 10
+        },
+        {
+          "quantity": 20
+        }
+      ],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT FREE + 250 tín dụng CODEX+ đã ver sẵn số chỉ việc dùng",
+        "sortOrder": 2,
+        "isActive": true
+      }
+    },
+    {
+      "id": 31,
+      "name": "ChatGPT plus K12 đến 2028- die trước 7 ngày refund 50%",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 3,
+        "name": "ChatGPT Plus K12",
+        "sortOrder": 2,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT plus K12 đến 2028- die trước 7 ngày refund 50%",
+        "sortOrder": 2,
+        "isActive": true
+      }
+    },
+    {
+      "id": 70,
+      "name": "Chatgpt free codex + json + account (đẫ ver sẵn số chỉ việc dùng )",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "tiered",
+      "quantityTiers": [
+        {
+          "quantity": 5
+        },
+        {
+          "quantity": 10
+        }
+      ],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "Chatgpt free codex + json + account (đẫ ver sẵn số chỉ việc dùng )",
+        "sortOrder": 64,
+        "isActive": true
+      }
+    },
+    {
+      "id": 9,
+      "name": "Gemini Pro 1 Năm (Cấp tài khoản)",
+      "categoryName": "Gemini",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 4,
+      "name": "ChatGPT Free có trial offer Momo (đặt hàng)",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT Free có trial offer Momo (đặt hàng)",
+        "sortOrder": 3,
+        "isActive": true
+      }
+    },
+    {
+      "id": 6,
+      "name": "ChatGPT Plus 1 tháng cá nhân Bảo hành Full",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT Plus 1 tháng cá nhân Bảo hành Full",
+        "sortOrder": 6,
+        "isActive": true
+      }
+    },
+    {
+      "id": 41,
+      "name": "ChatGPT K12 JSON (đang có)",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 3,
+        "name": "ChatGPT Plus K12",
+        "sortOrder": 2,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT K12 JSON (đang có)",
+        "sortOrder": 3,
+        "isActive": true
+      }
+    },
+    {
+      "id": 50,
+      "name": "ChatGPT FREE + 1000 tín dụng CODEX + đã ver sẵn số chỉ việc dùng",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "ChatGPT FREE + 1000 tín dụng CODEX + đã ver sẵn số chỉ việc dùng",
+        "sortOrder": 1,
+        "isActive": true
+      }
+    },
+    {
+      "id": 26,
+      "name": "ChatGPT Business 1 Tháng (Đang hết slot)",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 63,
+      "name": "Chatgpt pro 5x (tài khoản)",
+      "categoryName": "ChatGPT",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 1,
+        "name": "ChatGPT Plus cá nhân 1 tháng , Codex",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "Chatgpt pro 5x (tài khoản)",
+        "sortOrder": 61,
+        "isActive": true
+      }
+    },
+    {
+      "id": 7,
+      "name": "YouTube Premium 1 Tháng (Nâng chính chủ)",
+      "categoryName": "YouTube",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 44,
+      "name": "Claude Team Standard 1 tháng - Bảo hành 7 ngày",
+      "categoryName": "Claude",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 25,
+      "name": "Netflix Premium 4K 1 Tháng (full thiết bị)",
+      "categoryName": "Netflix",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 8,
+      "name": "Spotify Premium 3 Tháng (Cấp tài khoản)",
+      "categoryName": "Spotify",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 28,
+      "name": "NordVPN 3 Tháng (Link Gift)",
+      "categoryName": "VPN",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 40,
+      "name": "Grok Super 7 đến 10 ngày - BH2D",
+      "categoryName": "Grok",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 6,
+        "name": "Grok Super",
+        "sortOrder": 2,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "Grok Super 7 đến 10 ngày - Bảo hành 2 ngày",
+        "sortOrder": 0,
+        "isActive": true
+      }
+    },
+    {
+      "id": 20,
+      "name": "Adobe Express Premium 12 Tháng (Link Gift)",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 24,
+      "name": "Adobe Creative Cloud 1 Tháng (Cấp tài khoản)",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 29,
+      "name": "Adobe Full App 2Tháng (BH 7D)",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 21,
+      "name": "Microsoft 365 cá nhân 1 năm - Win+MAC",
+      "categoryName": "Office",
+      "quantityPricingMode": "tiered",
+      "quantityTiers": [
+        {
+          "quantity": 100
+        }
+      ],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 51,
+      "name": "Key Microsoft office 2024 Pro plus Vĩnh viễn",
+      "categoryName": "Office",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 52,
+      "name": "Leonardo AI 8.500 Credits (1 Tháng)",
+      "categoryName": "Khác",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 71,
+      "name": "JetBrains Edu Pack 12 tháng",
+      "categoryName": "JetBrains",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 72,
+      "name": "iLovePDF Premium 1 năm",
+      "categoryName": "iLovePDF",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 73,
+      "name": "Autodesk 1 năm",
+      "categoryName": "Autodesk",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 74,
+      "name": "Duolingo Super 12 tháng",
+      "categoryName": "Duolingo",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 18,
+      "name": "🧠 Claude Pro 1 tháng - Chính chủ (hết)",
+      "categoryName": "Claude",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 45,
+      "name": "Claude Team Premium 1 tháng - Bảo hành 7 ngày",
+      "categoryName": "Claude",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 7,
+        "name": "Claude Team 1 tháng",
+        "sortOrder": 0,
+        "isHighlight": true
+      },
+      "variant": {
+        "label": "Premium",
+        "sortOrder": 1,
+        "isActive": true
+      }
+    },
+    {
+      "id": 48,
+      "name": "Claude Pro Max x20 Nâng cấp chính chủ - Không BH",
+      "categoryName": "Claude",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 49,
+      "name": "Claude Pro Max x20 Cấp tài khoản - Không BH",
+      "categoryName": "Claude",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 11,
+      "name": "NordVPN 1 tháng (Cấp tài khoản)",
+      "categoryName": "VPN",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 19,
+      "name": "Grok Super 1 tháng",
+      "categoryName": "Grok",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 6,
+        "name": "Grok Super",
+        "sortOrder": 2,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "Grok Super 1 tháng",
+        "sortOrder": 1,
+        "isActive": true
+      }
+    },
+    {
+      "id": 62,
+      "name": "Grok Free",
+      "categoryName": "Grok",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 64,
+      "name": "Grok free +json + account (có model 4.6 )",
+      "categoryName": "Grok",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [
+        {
+          "quantity": 5
+        },
+        {
+          "quantity": 10
+        },
+        {
+          "quantity": 20
+        },
+        {
+          "quantity": 50
+        },
+        {
+          "quantity": 100
+        }
+      ],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 32,
+      "name": "Adobe CC Pro 1 Tháng - Bảo hành Full",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 33,
+      "name": "Adobe Creative Cloud 3 Tháng - Không bảo hành",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 46,
+      "name": "Adobe Creative Cloud Trial 14 Ngày | Bảo hành 7 ngày",
+      "categoryName": "Adobe",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 34,
+      "name": "Office 365 100GB - 5 thiết bị - 6 năm (BH2 năm)",
+      "categoryName": "Office",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    },
+    {
+      "id": 35,
+      "name": "CapCut Pro/Team 5-7 ngày - Bảo hành 5D",
+      "categoryName": "CapCut",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 4,
+        "name": "CapCut Pro",
+        "sortOrder": 3,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "CapCut Pro/Team 7 ngày - Bảo hành trọn hạn",
+        "sortOrder": 0,
+        "isActive": true
+      }
+    },
+    {
+      "id": 36,
+      "name": "CapCut Pro 30 ngày - Bảo hành 30 ngày",
+      "categoryName": "CapCut",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 4,
+        "name": "CapCut Pro",
+        "sortOrder": 3,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "CapCut Pro 30 ngày - Bảo hành 30 ngày",
+        "sortOrder": 1,
+        "isActive": true
+      }
+    },
+    {
+      "id": 37,
+      "name": "Canva Pro 30 ngày - Bảo hành 24 giờ",
+      "categoryName": "Canva",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 5,
+        "name": "Canva Pro & Edu",
+        "sortOrder": 4,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "Canva Pro 30 ngày - Bảo hành 24 giờ",
+        "sortOrder": 0,
+        "isActive": true
+      }
+    },
+    {
+      "id": 38,
+      "name": "Canva Edu 2 năm - Bảo hành 30 ngày",
+      "categoryName": "Canva",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 5,
+        "name": "Canva Pro & Edu",
+        "sortOrder": 4,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "Canva Edu 2 năm - Bảo hành 30 ngày",
+        "sortOrder": 1,
+        "isActive": true
+      }
+    },
+    {
+      "id": 39,
+      "name": "Canva Edu Team 1 năm - Thêm vào email của bạn",
+      "categoryName": "Canva",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": {
+        "id": 5,
+        "name": "Canva Pro & Edu",
+        "sortOrder": 4,
+        "isHighlight": false
+      },
+      "variant": {
+        "label": "Canva Edu Team 1 năm - Thêm vào email của bạn",
+        "sortOrder": 2,
+        "isActive": true
+      }
+    },
+    {
+      "id": 47,
+      "name": "Key Windows 10/11 Pro chính hãng - Vĩnh viễn 1 PC",
+      "categoryName": "Khác",
+      "quantityPricingMode": "standard",
+      "quantityTiers": [],
+      "group": null,
+      "variant": null
+    }
+  ]
+}
