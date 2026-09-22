@@ -296,20 +296,33 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
             </div>
 
             <div className="bank-qr">
-              <Image
-                src={!qrImageFailed && order.vietQrUrl ? order.vietQrUrl : '/images/payment-bank-qr.png'}
-                alt={`Mã QR chuyển khoản cho đơn ${order.orderCode}`}
-                width={520}
-                height={520}
-                priority
-                unoptimized={Boolean(order.vietQrUrl)}
-                onError={() => setQrImageFailed(true)}
-              />
-              <p className="mt-2 text-center text-[9px] font-bold leading-4 text-slate-600">
-                {!qrImageFailed && order.vietQrUrl
-                  ? `QR động đã điền sẵn ${formatMoney(order.totalPrice)} và nội dung ${order.paymentTransferContent}. Hãy kiểm tra đúng người nhận trước khi xác nhận.`
-                  : 'QR dự phòng của shop · vui lòng nhập chính xác số tiền và nội dung chuyển khoản bên dưới.'}
-              </p>
+              {!qrImageFailed && order.vietQrUrl ? (
+                <>
+                  <Image
+                    src={order.vietQrUrl}
+                    alt={`Mã QR chuyển khoản cho đơn ${order.orderCode}`}
+                    width={520}
+                    height={520}
+                    priority
+                    unoptimized
+                    onError={() => setQrImageFailed(true)}
+                  />
+                  <p className="mt-2 text-center text-[10px] font-bold leading-5 text-slate-700">
+                    QR đã điền sẵn {formatMoney(order.totalPrice)} và mã {order.paymentTransferContent}. Kiểm tra người nhận trước khi xác nhận.
+                  </p>
+                </>
+              ) : (
+                <div className="flex min-h-52 flex-col items-center justify-center gap-3 p-5 text-center text-slate-800" role="status">
+                  <AlertTriangle size={28} className="text-amber-600" aria-hidden="true" />
+                  <strong className="text-base">Không tải được QR của đơn này</strong>
+                  <p className="m-0 text-sm leading-6">Hãy dùng thông tin chuyển khoản ngay bên dưới và nhập đúng số tiền, mã đơn. Không quét ảnh QR cũ.</p>
+                  {order.vietQrUrl && (
+                    <button type="button" className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-800" onClick={() => setQrImageFailed(false)}>
+                      Thử tải lại QR
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <dl className="bank-details">
