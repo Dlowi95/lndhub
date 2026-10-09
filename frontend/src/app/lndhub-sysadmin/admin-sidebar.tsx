@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { Bell, FolderTree, Gift, KeyRound, LayoutDashboard, Link2, LogOut, Package, ReceiptText, ShieldCheck, Store, X } from 'lucide-react';
-export type AdminSection = 'overview' | 'products' | 'categories' | 'contacts' | 'announcements' | 'orders' | 'gifts' | 'inventory';
+import { Bell, FolderTree, Gift, KeyRound, LayoutDashboard, Link2, LogOut, MessageCircle, Package, ReceiptText, ShieldCheck, Store, X } from 'lucide-react';
+export type AdminSection = 'overview' | 'products' | 'categories' | 'contacts' | 'announcements' | 'chat' | 'orders' | 'gifts' | 'inventory';
 const navClass = (active: boolean) => "relative mb-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold " + (active ? "bg-cyan-300/10 text-cyan-100" : "text-slate-400 hover:bg-white/[0.04] hover:text-white");
 const NAV = [
   { id: 'overview', label: 'Bảng điều khiển', group: 'Tổng quan', icon: LayoutDashboard },
@@ -9,13 +9,14 @@ const NAV = [
   { id: 'categories', label: 'Danh mục', group: 'Catalog', icon: FolderTree },
   { id: 'contacts', label: 'Liên hệ', group: 'Nội dung', icon: Link2 },
   { id: 'announcements', label: 'Thông báo', group: 'Nội dung', icon: Bell },
+  { id: 'chat', label: 'Hội thoại', group: 'Hỗ trợ', icon: MessageCircle },
   { id: 'orders', label: 'Đơn hàng', group: 'Bán hàng', icon: ReceiptText },
   { id: 'gifts', label: 'Kho quà', group: 'Vận hành', icon: Gift },
   { id: 'inventory', label: 'Kho key', group: 'Vận hành', icon: KeyRound },
 ] as const;
 export function AdminSidebar({ active, mobileOpen, counts, onClose, onSelect, onLogout }: {
   active: AdminSection; mobileOpen: boolean;
-  counts: Record<'products' | 'categories' | 'announcements' | 'orders' | 'gifts', number>;
+  counts: Record<'products' | 'categories' | 'announcements' | 'chat' | 'orders' | 'gifts', number>;
   onClose: () => void; onSelect: (value: AdminSection) => void; onLogout: () => void;
 }) {
   let previousGroup = '';
@@ -28,7 +29,7 @@ export function AdminSidebar({ active, mobileOpen, counts, onClose, onSelect, on
     <nav className="flex-1 overflow-y-auto px-3 py-5">
       {NAV.map((item) => {
         const Icon = item.icon; const showGroup = item.group !== previousGroup; previousGroup = item.group;
-        const count = item.id === 'products' ? counts.products : item.id === 'categories' ? counts.categories : item.id === 'announcements' ? counts.announcements : item.id === 'orders' ? counts.orders : item.id === 'gifts' ? counts.gifts : null;
+        const count = item.id === 'products' ? counts.products : item.id === 'categories' ? counts.categories : item.id === 'announcements' ? counts.announcements : item.id === 'chat' ? counts.chat : item.id === 'orders' ? counts.orders : item.id === 'gifts' ? counts.gifts : null;
         return <div key={item.id}>{showGroup && <h2 className="mb-2 mt-5 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 first:mt-0">{item.group}</h2>}
           <button type="button" onClick={() => onSelect(item.id)} className={navClass(active === item.id)}>
             {active === item.id && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-cyan-300" />}

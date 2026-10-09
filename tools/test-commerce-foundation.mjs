@@ -11,6 +11,7 @@ const { KeysService } = require(path.join(root, 'backend/dist/modules/keys/keys.
 const { FulfillmentStatus, PaymentStatus } = require(path.join(root, 'backend/dist/schemas/order.schema.js'));
 const { FulfillmentType } = require(path.join(root, 'backend/dist/schemas/product.schema.js'));
 const { KeyStatus } = require(path.join(root, 'backend/dist/schemas/api-key.schema.js'));
+const { validateEnvironment } = require(path.join(root, 'backend/dist/config/validate-env.js'));
 
 function queryResult(value) {
   return {
@@ -41,8 +42,10 @@ OrderModel.findOne = (filter) => {
 OrderModel.find = () => queryResult(savedOrders);
 OrderModel.updateMany = (filter, update) => {
   for (const order of savedOrders) {
+    const reportedStateMatches = filter.customerReportedPaidAt?.$exists === undefined
+      || Boolean(order.customerReportedPaidAt) === filter.customerReportedPaidAt.$exists;
     const stale = order.paymentStatus === filter.paymentStatus
-      && !order.customerReportedPaidAt
+      && reportedStateMatches
       && order.expiresAt <= filter.expiresAt.$lte;
     if (stale) {
       Object.assign(order, update.$set || {});
@@ -82,6 +85,32 @@ const configValues = {
 };
 const config = { get: (name, fallback = '') => configValues[name] ?? fallback };
 const orders = new OrdersService(OrderModel, products, keys, config);
+
+const productionEnvironment = {
+  NODE_ENV: 'production',
+  MONGODB_URI: 'mongodb+srv://user:password@cluster.example.mongodb.net/lndhub',
+  CORS_ORIGINS: 'https://lndhub.example',
+  GOOGLE_CLIENT_ID: 'client.apps.googleusercontent.com',
+  ADMIN_EMAILS: 'admin@example.com',
+  ENABLE_CHECKOUT: 'true',
+  ENABLE_PAYMENT_SIMULATION: 'false',
+  ENABLE_DEMO_SEED: 'false',
+  BANK_ID: 'TPBank',
+  BANK_NAME: 'TPBank',
+  ACCOUNT_NO: '13386488888',
+  ACCOUNT_NAME: 'VO HOANG DAI LOI',
+  TRUST_PROXY_HOPS: '1',
+  TRUST_CLOUDFLARE_HEADERS: 'false',
+  ORDER_LOOKUP_SECRET: 'lookup-secret-00000000000000000000000001',
+  GIFT_ENCRYPTION_KEY: '1111111111111111111111111111111111111111111111111111111111111111',
+  INVENTORY_ENCRYPTION_KEY: '2222222222222222222222222222222222222222222222222222222222222222',
+  DELIVERY_ENCRYPTION_KEY: 'delivery-secret-00000000000000000000004',
+};
+assert.doesNotThrow(() => validateEnvironment({ ...productionEnvironment }));
+assert.throws(() => validateEnvironment({ ...productionEnvironment, CORS_ORIGINS: '*' }), /HTTPS/);
+assert.throws(() => validateEnvironment({ ...productionEnvironment, ENABLE_PAYMENT_SIMULATION: 'true' }), /mô phỏng/);
+assert.throws(() => validateEnvironment({ ...productionEnvironment, DELIVERY_ENCRYPTION_KEY: productionEnvironment.ORDER_LOOKUP_SECRET }), /khóa mã hóa riêng/);
+assert.throws(() => validateEnvironment({ ...productionEnvironment, INVENTORY_ENCRYPTION_KEY: 'not-a-real-aes-key-but-longer-than-32-characters' }), /AES-256/);
 
 const created = await orders.createOrder({
   productId: tierProduct._id,
@@ -141,6 +170,32 @@ assert.notEqual(fulfilled.deliveryCiphertext, 'MANUAL-SECRET-KEY');
 const deliveredLookup = await orders.lookupOrder(created.order.orderCode, created.lookupToken);
 assert.equal(deliveredLookup.deliveryContent, 'MANUAL-SECRET-KEY');
 
+const expiring = await orders.createOrder({
+  productId: tierProduct._id,
+  variantId: 'gemini-18m-x1',
+  quantity: 1,
+}, 'commerce-idempotency-key-0003');
+const expiringDocument = savedOrders.find((item) => item.orderCode === expiring.order.orderCode);
+expiringDocument.expiresAt = new Date(Date.now() - 1000);
+const expired = await orders.lookupOrder(expiring.order.orderCode, expiring.lookupToken);
+assert.equal(expired.paymentStatus, PaymentStatus.EXPIRED);
+
+const lateReported = await orders.reportPayment(expiring.order.orderCode, expiring.lookupToken);
+assert.equal(lateReported.paymentStatus, PaymentStatus.PENDING);
+assert.ok(lateReported.customerReportedPaidAt);
+assert.equal(expiringDocument.auditTrail.at(-1).type, 'CUSTOMER_REPORTED_LATE_PAYMENT');
+
+expiringDocument.expiresAt = new Date(Date.now() - 1000);
+const reviewExpired = await orders.lookupOrder(expiring.order.orderCode, expiring.lookupToken);
+assert.equal(reviewExpired.paymentStatus, PaymentStatus.EXPIRED);
+assert.equal(expiringDocument.auditTrail.at(-1).type, 'PAYMENT_REVIEW_EXPIRED');
+
+const reconciledLatePayment = await orders.completeOrder(expiring.order.orderCode);
+assert.equal(reconciledLatePayment.paymentStatus, PaymentStatus.PAID);
+const auditCountAfterReconciliation = expiringDocument.auditTrail.length;
+await orders.completeOrder(expiring.order.orderCode);
+assert.equal(expiringDocument.auditTrail.length, auditCountAfterReconciliation);
+
 const inventory = [
   { _id: 'key-1', key: 'KEY_ONE', model: 'api-model', status: KeyStatus.AVAILABLE, orderCode: '' },
   { _id: 'key-2', key: 'KEY_TWO', model: 'api-model', status: KeyStatus.AVAILABLE, orderCode: '' },
@@ -183,12 +238,16 @@ console.log(JSON.stringify({
   passed: true,
   assertions: [
     'server-side tier quote',
+    'production environment fails closed on unsafe configuration',
     'dynamic VietQR contains exact amount and transfer content',
     'cryptographic order code and private lookup token',
     'idempotent create order',
     'lookup privacy',
     'manual fulfillment separation',
     'customer payment report stays pending',
+    'expired QR locks and supports late-payment review',
+    'reported payments leave the review queue after 24 hours',
+    'admin can reconcile a late transfer idempotently',
     'encrypted manual delivery requires lookup token',
     'atomic inventory assignment',
     'no client mock order or fake key',

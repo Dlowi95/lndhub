@@ -4,12 +4,13 @@ import { ArrowLeft, Boxes, Check, CircleDollarSign, FolderTree, KeyRound, Menu, 
 import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_STORE_SETTINGS } from '../../lib/contact';
-import { AdminStats, Announcement, Category, GiftAdminData, Order, Product, StoreSettings } from '../../lib/types';
+import { AdminStats, Announcement, Category, ChatConversation, GiftAdminData, Order, Product, StoreSettings } from '../../lib/types';
 import { AdminSection, AdminSidebar } from './admin-sidebar';
 import CatalogAdmin from './catalog-admin';
 import StorefrontAdmin from './storefront-admin';
 import GiftAdmin from './gift-admin';
 import OrdersAdmin from './orders-admin';
+import ChatAdmin from './chat-admin';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const EMPTY_STATS: AdminStats = { totalOrders: 0, paidOrdersCount: 0, totalRevenue: 0, totalProducts: 0, availableKeysCount: 0, recentOrders: [] };
@@ -26,6 +27,7 @@ function AdminConsole({ credential, onLogout }: { credential: string; onLogout: 
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [gifts, setGifts] = useState<GiftAdminData>(EMPTY_GIFTS);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [importModel, setImportModel] = useState('gemini-1.5-pro');
@@ -43,24 +45,41 @@ function AdminConsole({ credential, onLogout }: { credential: string; onLogout: 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, o, p, c, storeSettings, announcementList, giftData] = await Promise.all([
+      const [s, o, p, c, storeSettings, announcementList, giftData, chatData] = await Promise.all([
         api<{ data: AdminStats }>('/admin/stats'), api<{ data: Order[] }>('/admin/orders'),
         api<{ data: Product[] }>('/admin/products'), api<{ data: Category[] }>('/admin/categories'),
         api<{ data: StoreSettings }>('/admin/store-settings'), api<{ data: Announcement[] }>('/admin/announcements'),
         api<{ data: GiftAdminData }>('/admin/gifts'),
+        api<{ data: ChatConversation[] }>('/admin/chat/conversations'),
       ]);
       setStats(s.data); setOrders(o.data); setProducts(p.data); setCategories(c.data);
       setSettings(storeSettings.data); setAnnouncements(announcementList.data); setGifts(giftData.data);
+      setConversations(chatData.data);
     } catch (error) { if ((error as Error).message !== 'AUTH') setNotice({ tone: 'error', message: 'Không tải được dữ liệu quản trị. Kiểm tra backend.' }); }
     finally { setLoading(false); }
+  }, [api]);
+
+  const refreshLive = useCallback(async () => {
+    try {
+      const [summary, orderList, chatData] = await Promise.all([
+        api<{ data: AdminStats }>('/admin/stats'),
+        api<{ data: Order[] }>('/admin/orders'),
+        api<{ data: ChatConversation[] }>('/admin/chat/conversations'),
+      ]);
+      setStats(summary.data);
+      setOrders(orderList.data);
+      setConversations(chatData.data);
+    } catch (error) {
+      if ((error as Error).message !== 'AUTH') setNotice({ tone: 'error', message: 'Mất kết nối dữ liệu trực tiếp. Bấm Làm mới để thử lại.' });
+    }
   }, [api]);
   useEffect(() => {
     void refresh();
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible') void refreshLive();
     }, 15_000);
     return () => window.clearInterval(timer);
-  }, [refresh]);
+  }, [refresh, refreshLive]);
   const notify = (tone: 'success' | 'error', message: string) => setNotice({ tone, message });
   const markPaid = async (code: string) => {
     if (!window.confirm(`Chỉ xác nhận khi tiền của đơn ${code} đã thực tế vào tài khoản. Tiếp tục?`)) return;
@@ -77,17 +96,23 @@ function AdminConsole({ credential, onLogout }: { credential: string; onLogout: 
       await refresh();
     } catch (error) { notify('error', (error as Error).message); }
   };
+  const cancelOrder = async (code: string) => {
+    if (!window.confirm(`Hủy đơn ${code}? Chỉ dùng khi chắc chắn chưa nhận tiền.`)) return;
+    try { await api(`/admin/orders/${encodeURIComponent(code)}/cancel`, { method: 'POST' }); notify('success', `Đã hủy đơn ${code}.`); await refreshLive(); }
+    catch (error) { notify('error', (error as Error).message); }
+  };
   const importInventory = async (event: React.FormEvent) => {
     event.preventDefault(); const keys = importKeys.split('\n').map((item) => item.trim()).filter(Boolean); if (!keys.length) return;
     try { const result = await api<{ imported: number }>('/admin/inventory/import', { method: 'POST', body: JSON.stringify({ keys, model: importModel }) }); setImportKeys(''); notify('success', `Đã nạp ${result.imported} key vào kho.`); await refresh(); }
     catch (error) { notify('error', (error as Error).message); }
   };
   const selectSection = (value: AdminSection) => { setSection(value); setMobileOpen(false); setNotice(null); };
-  const titles: Record<AdminSection, string> = { overview: 'Bảng điều khiển', products: 'Sản phẩm', categories: 'Danh mục', contacts: 'Liên hệ', announcements: 'Thông báo', orders: 'Đơn hàng', gifts: 'Kho quà', inventory: 'Kho key' };
-  const paymentReviewCount = orders.filter((item) => item.customerReportedPaidAt && item.paymentStatus === 'PENDING').length;
+  const titles: Record<AdminSection, string> = { overview: 'Bảng điều khiển', products: 'Sản phẩm', categories: 'Danh mục', contacts: 'Liên hệ', announcements: 'Thông báo', chat: 'Hội thoại', orders: 'Đơn hàng', gifts: 'Kho quà', inventory: 'Kho key' };
+  const paymentReviewCount = stats.paymentReviewCount ?? orders.filter((item) => item.customerReportedPaidAt && item.paymentStatus === 'PENDING').length;
+  const unreadChatCount = conversations.reduce((sum, item) => sum + item.unreadForAdmin, 0);
 
   return <div className="min-h-screen bg-[#090b14] text-white">
-    <AdminSidebar active={section} mobileOpen={mobileOpen} counts={{ products: products.length, categories: categories.length, announcements: announcements.length, orders: paymentReviewCount, gifts: gifts.remaining }} onClose={() => setMobileOpen(false)} onSelect={selectSection} onLogout={() => onLogout()} />
+    <AdminSidebar active={section} mobileOpen={mobileOpen} counts={{ products: products.length, categories: categories.length, announcements: announcements.length, chat: unreadChatCount, orders: paymentReviewCount, gifts: gifts.remaining }} onClose={() => setMobileOpen(false)} onSelect={selectSection} onLogout={() => onLogout()} />
     <div className="min-h-screen lg:ml-72">
       <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-white/[0.07] bg-[#090b14]/90 px-4 backdrop-blur-xl sm:px-6">
         <button type="button" onClick={() => setMobileOpen(true)} className="grid size-10 place-items-center rounded-xl border border-white/10 lg:hidden" aria-label="Mở menu"><Menu className="size-5" /></button>
@@ -110,9 +135,9 @@ function AdminConsole({ credential, onLogout }: { credential: string; onLogout: 
           </div>
           <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
             <article className="rounded-2xl border border-white/[0.08] bg-[#0f121d] p-5"><h2 className="font-black">Lộ trình sẵn sàng bán</h2><p className="mb-4 text-xs text-slate-500">Làm lần lượt để tránh sai dữ liệu khi mở thanh toán.</p>
-              {[['Thiết lập 18 danh mục', categories.length >= 18, 'categories'], ['Nhập đủ 36 sản phẩm', products.length >= 36, 'products'], ['Xuất bản sản phẩm đã chốt giá', (stats.publishedProductsCount || 0) > 0, 'products'], ['Chốt luồng thanh toán', false, 'orders']].map(([label, done, target]) => <button type="button" key={String(label)} onClick={() => selectSection(target as AdminSection)} className="mb-2 flex min-h-12 w-full items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 text-left"><span className={done ? 'grid size-6 place-items-center rounded-full bg-emerald-400/10 text-emerald-300' : 'size-6 rounded-full border border-white/10'}>{done && <Check className="size-3.5" />}</span><span className="text-sm font-semibold text-slate-300">{String(label)}</span></button>)}
+              {[['Thiết lập danh mục', categories.length > 0, 'categories'], ['Nhập sản phẩm', products.length > 0, 'products'], ['Xuất bản sản phẩm đã chốt giá', (stats.publishedProductsCount || 0) > 0, 'products'], ['Mở checkout và cấu hình ngân hàng', Boolean(stats.checkoutEnabled && stats.bankConfigured && stats.encryptionConfigured), 'orders']].map(([label, done, target]) => <button type="button" key={String(label)} onClick={() => selectSection(target as AdminSection)} className="mb-2 flex min-h-12 w-full items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 text-left"><span className={done ? 'grid size-6 place-items-center rounded-full bg-emerald-400/10 text-emerald-300' : 'size-6 rounded-full border border-white/10'}>{done && <Check className="size-3.5" />}</span><span className="text-sm font-semibold text-slate-300">{String(label)}</span></button>)}
             </article>
-            <article className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-5"><ShieldCheck className="size-8 text-amber-200" /><h2 className="mt-4 font-black text-amber-100">Thanh toán đang khóa</h2><p className="mt-2 text-sm leading-6 text-slate-400">Catalog, giá, tồn kho và chính sách sẽ được hoàn thiện trước. Checkout chưa được mở trong giai đoạn này.</p></article>
+            <article className={stats.checkoutEnabled && stats.bankConfigured && stats.encryptionConfigured ? 'rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-5' : 'rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-5'}><ShieldCheck className={stats.checkoutEnabled && stats.bankConfigured && stats.encryptionConfigured ? 'size-8 text-emerald-200' : 'size-8 text-amber-200'} /><h2 className="mt-4 font-black">{stats.checkoutEnabled && stats.bankConfigured && stats.encryptionConfigured ? 'Thanh toán đã sẵn sàng' : 'Thanh toán chưa đủ cấu hình'}</h2><p className="mt-2 text-sm leading-6 text-slate-400">{stats.checkoutEnabled && stats.bankConfigured && stats.encryptionConfigured ? 'Checkout, tài khoản nhận tiền và các khóa mã hóa đã được backend xác nhận.' : 'Kiểm tra ENABLE_CHECKOUT, thông tin ngân hàng và các khóa mã hóa trước khi mở bán.'}</p></article>
           </div>
         </section>}
 
@@ -120,9 +145,11 @@ function AdminConsole({ credential, onLogout }: { credential: string; onLogout: 
 
         {(section === 'contacts' || section === 'announcements') && <StorefrontAdmin mode={section} credential={credential} settings={settings} announcements={announcements} refresh={refresh} notify={notify} />}
 
+        {section === 'chat' && <ChatAdmin credential={credential} conversations={conversations} refresh={refresh} notify={notify} />}
+
         {section === 'gifts' && <GiftAdmin credential={credential} data={gifts} refresh={refresh} notify={notify} />}
 
-        {section === 'orders' && <OrdersAdmin orders={orders} paymentReviewCount={paymentReviewCount} deliveryDrafts={deliveryDrafts} setDeliveryDrafts={setDeliveryDrafts} markPaid={markPaid} fulfillOrder={fulfillOrder} />}
+        {section === 'orders' && <OrdersAdmin orders={orders} paymentReviewCount={paymentReviewCount} deliveryDrafts={deliveryDrafts} setDeliveryDrafts={setDeliveryDrafts} markPaid={markPaid} fulfillOrder={fulfillOrder} cancelOrder={cancelOrder} />}
 
         {section === 'inventory' && <section className="grid gap-5 xl:grid-cols-[1fr_360px]"><form onSubmit={importInventory} className="rounded-2xl border border-white/[0.08] bg-[#0f121d] p-5"><h2 className="text-xl font-black">Nạp kho key</h2><p className="mb-5 mt-1 text-sm text-slate-500">Mỗi dòng một key; dữ liệu gửi đến API admin đã xác thực.</p><label className="mb-4 block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Model cấp phát</span><input value={importModel} onChange={(e) => setImportModel(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#070912] px-3 text-sm" /></label><label className="block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Danh sách key</span><textarea required rows={10} value={importKeys} onChange={(e) => setImportKeys(e.target.value)} className="w-full rounded-xl border border-white/10 bg-[#070912] p-3 font-mono text-sm text-cyan-100" /></label><button type="submit" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-5 text-sm font-black text-slate-950"><Package className="size-4" /> Nạp vào kho</button></form><aside className="h-fit rounded-2xl border border-white/[0.08] bg-[#0f121d] p-5"><Boxes className="size-8 text-amber-200" /><p className="mt-4 text-3xl font-black">{stats.availableKeysCount}</p><p className="text-sm text-slate-500">key sẵn sàng cấp phát</p><p className="mt-5 rounded-xl bg-amber-300/5 p-3 text-xs leading-5 text-amber-100/80">Không đưa key thật vào ảnh chụp, log hoặc commit Git.</p></aside></section>}
       </main>

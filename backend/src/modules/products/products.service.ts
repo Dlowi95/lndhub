@@ -187,4 +187,13 @@ export class ProductsService implements OnModuleInit {
       status: { $ne: ProductStatus.ARCHIVED },
     });
   }
+
+  async getAdminCounts() {
+    const [totalProducts, publishedProductsCount, draftProductsCount] = await Promise.all([
+      this.productModel.countDocuments({ status: { $ne: ProductStatus.ARCHIVED } }).exec(),
+      this.productModel.countDocuments({ status: ProductStatus.PUBLISHED }).exec(),
+      this.productModel.countDocuments({ status: ProductStatus.DRAFT }).exec(),
+    ]);
+    return { totalProducts, publishedProductsCount, draftProductsCount };
+  }
 }

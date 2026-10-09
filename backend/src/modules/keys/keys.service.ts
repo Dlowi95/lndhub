@@ -137,6 +137,10 @@ export class KeysService implements OnModuleInit {
     return this.apiKeyModel.countDocuments({ model, status: KeyStatus.AVAILABLE });
   }
 
+  async getAvailableTotal(): Promise<number> {
+    return this.apiKeyModel.countDocuments({ status: KeyStatus.AVAILABLE }).exec();
+  }
+
   async assignKeys(model: string, quantity: number, orderCode: string): Promise<string[]> {
     const existing = await this.apiKeyModel
       .find({ orderCode, status: { $in: [KeyStatus.RESERVED, KeyStatus.SOLD] } })

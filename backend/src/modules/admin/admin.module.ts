@@ -7,9 +7,10 @@ import { AdminAuthGuard } from './admin-auth.guard';
 import { CategoriesModule } from '../categories/categories.module';
 import { StorefrontModule } from '../storefront/storefront.module';
 import { GiftsModule } from '../gifts/gifts.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
-  imports: [ProductsModule, CategoriesModule, OrdersModule, KeysModule, StorefrontModule, GiftsModule],
+  imports: [ProductsModule, CategoriesModule, OrdersModule, KeysModule, StorefrontModule, GiftsModule, ChatModule],
   controllers: [AdminController],
   providers: [AdminAuthGuard],
 })

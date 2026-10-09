@@ -12,12 +12,15 @@ import { StorefrontModule } from './modules/storefront/storefront.module';
 import { GiftsModule } from './modules/gifts/gifts.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { ChatModule } from './modules/chat/chat.module';
+import { validateEnvironment } from './config/validate-env';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: validateEnvironment,
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     MongooseModule.forRootAsync({
@@ -41,6 +44,7 @@ import { APP_GUARD } from '@nestjs/core';
     GiftsModule,
     OrdersModule,
     KeysModule,
+    ChatModule,
     AdminModule,
   ],
   controllers: [HealthController],

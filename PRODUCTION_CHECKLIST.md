@@ -5,7 +5,8 @@ Thanh toán vẫn phải giữ ở trạng thái tắt cho đến khi hoàn thà
 ## 1. Runtime và bí mật
 
 - Dùng Node.js 22.22.3 LTS hoặc image Docker đi kèm dự án.
-- Tạo riêng từng bí mật ngẫu nhiên dài tối thiểu 32 byte cho JWT_SECRET, GIFT_ENCRYPTION_KEY, INVENTORY_ENCRYPTION_KEY, ORDER_LOOKUP_SECRET và DELIVERY_ENCRYPTION_KEY.
+- Tạo riêng từng bí mật cho GIFT_ENCRYPTION_KEY, INVENTORY_ENCRYPTION_KEY, ORDER_LOOKUP_SECRET và DELIVERY_ENCRYPTION_KEY.
+- GIFT_ENCRYPTION_KEY và INVENTORY_ENCRYPTION_KEY phải là đúng 32 byte (64 ký tự hex hoặc base64 của 32 byte). Hai khóa còn lại dài tối thiểu 32 ký tự.
 - Không dùng lại cùng một giá trị giữa các biến bí mật.
 - Không commit file .env hoặc đưa bí mật vào ảnh chụp, log và lịch sử lệnh.
 - Cấu hình ADMIN_EMAILS đúng danh sách Gmail được phép quản trị.
@@ -57,7 +58,7 @@ Chạy tại thư mục frontend:
 
 - GET /api/health trả về 200 và database connected.
 - API admin không có token phải trả về 401.
-- Checkout phải trả về 503 khi CHECKOUT_ENABLED=false.
+- Checkout phải trả về 503 khi ENABLE_CHECKOUT=false.
 - Endpoint mô phỏng thanh toán phải trả về 404 trên production.
 - Origin lạ không được nhận CORS header.
 - Header bảo mật Helmet và header bảo mật frontend xuất hiện đúng.
@@ -66,4 +67,4 @@ Chạy tại thư mục frontend:
 
 ## 7. Điều kiện mở bán
 
-Chỉ chuyển ENABLE_CHECKOUT=true khi webhook thanh toán, giữ tồn kho, hết hạn đơn, hoàn tồn, refund, giám sát lỗi và kịch bản khôi phục đã được kiểm thử đầy đủ trên staging.
+Với quy trình xác nhận thủ công hiện tại, chỉ chuyển ENABLE_CHECKOUT=true sau khi QR động đã được quét thử, admin xác nhận được giao dịch, giao hàng hoạt động, giám sát lỗi và kịch bản khôi phục đã được kiểm thử trên staging. Không quảng cáo là tự động cho đến khi có webhook ngân hàng đã xác minh chữ ký và chống replay.

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, BadgeCheck, Clock3, KeyRound, Landmark, Send } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Clock3, KeyRound, Landmark, Send, XCircle } from 'lucide-react';
 import { Dispatch, SetStateAction } from 'react';
 import { Order } from '../../lib/types';
 
@@ -13,9 +13,10 @@ type Props = {
   setDeliveryDrafts: Dispatch<SetStateAction<Record<string, string>>>;
   markPaid: (code: string) => Promise<void>;
   fulfillOrder: (code: string) => Promise<void>;
+  cancelOrder: (code: string) => Promise<void>;
 };
 
-export default function OrdersAdmin({ orders, paymentReviewCount, deliveryDrafts, setDeliveryDrafts, markPaid, fulfillOrder }: Props) {
+export default function OrdersAdmin({ orders, paymentReviewCount, deliveryDrafts, setDeliveryDrafts, markPaid, fulfillOrder, cancelOrder }: Props) {
   return <section className="space-y-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div><h2 className="text-xl font-black">Đơn hàng chuyển khoản</h2><p className="mt-1 text-sm text-slate-500">Khách báo đã chuyển không đồng nghĩa tiền đã vào. Luôn đối chiếu ngân hàng trước khi xác nhận.</p></div>
@@ -42,7 +43,7 @@ export default function OrdersAdmin({ orders, paymentReviewCount, deliveryDrafts
             <div className="rounded-xl bg-white/[0.025] p-3"><span className="text-slate-600">Email</span><strong className="mt-1 block break-all text-slate-200">{item.customerEmail || 'Không cung cấp'}</strong></div>
           </div>
 
-          {!paid && item.paymentStatus !== 'EXPIRED' && <button type="button" onClick={() => void markPaid(item.orderCode)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-black text-slate-950"><Landmark className="size-4" /> Xác nhận tiền đã vào tài khoản</button>}
+          {!paid && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => void markPaid(item.orderCode)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-black text-slate-950"><Landmark className="size-4" /> {item.paymentStatus === 'EXPIRED' ? 'Xác nhận giao dịch đến trễ' : 'Xác nhận tiền đã vào tài khoản'}</button>{item.paymentStatus === 'PENDING' && <button type="button" onClick={() => void cancelOrder(item.orderCode)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-300/20 bg-rose-300/[0.06] px-4 text-xs font-black text-rose-200"><XCircle className="size-4" /> Hủy đơn chưa nhận tiền</button>}</div>}
 
           {paid && !fulfilled && <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4"><div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan-300/10 text-cyan-200"><KeyRound className="size-4" /></span><div><strong className="text-sm text-cyan-100">Nhập key hoặc thông tin giao hàng</strong><p className="mt-1 text-xs leading-5 text-slate-500">Nội dung được mã hóa trước khi lưu. Khách chỉ xem được bằng token tra cứu riêng.</p></div></div><textarea rows={4} value={deliveryDrafts[item.orderCode] || ''} onChange={(event) => setDeliveryDrafts((current) => ({ ...current, [item.orderCode]: event.currentTarget.value }))} placeholder="Dán key, tài khoản hoặc hướng dẫn nhận hàng..." className="mt-3 w-full rounded-xl border border-white/10 bg-[#070912] p-3 font-mono text-sm text-cyan-100 outline-none focus:border-cyan-300/40" /><button type="button" onClick={() => void fulfillOrder(item.orderCode)} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-300 px-4 text-xs font-black text-slate-950"><Send className="size-4" /> Mã hóa và giao cho khách</button></div>}
 

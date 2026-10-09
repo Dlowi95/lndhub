@@ -21,7 +21,6 @@ async function bootstrap() {
   if (trustProxyHops > 0) app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
   app.use(helmet({
     crossOriginResourcePolicy: false,
-    contentSecurityPolicy: false,
   }));
   const allowedOrigins = getAllowedOrigins();
 
@@ -35,8 +34,8 @@ async function bootstrap() {
       callback(null, allowedOrigins.includes(origin.replace(/\/$/, '')));
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Chat-Token', 'Idempotency-Key'],
+    credentials: false,
   });
 
   app.useGlobalPipes(new ValidationPipe({

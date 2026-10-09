@@ -156,4 +156,36 @@ export interface AdminStats {
   publishedProductsCount?: number;
   draftProductsCount?: number;
   activeCategoriesCount?: number;
+  paymentReviewCount?: number;
+  checkoutEnabled?: boolean;
+  bankConfigured?: boolean;
+  encryptionConfigured?: boolean;
+}
+
+export interface ChatConversation {
+  _id: string;
+  displayName: string;
+  orderCode?: string;
+  status: 'OPEN' | 'CLOSED';
+  lastMessagePreview: string;
+  lastSender: 'CUSTOMER' | 'ADMIN' | '';
+  lastMessageAt: string;
+  unreadForAdmin: number;
+  unreadForCustomer: number;
+  messageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  _id: string;
+  conversationId: string;
+  sender: 'CUSTOMER' | 'ADMIN';
+  body: string;
+  createdAt: string;
+}
+
+export interface ChatConversationDetail {
+  conversation: ChatConversation;
+  messages: ChatMessage[];
 }

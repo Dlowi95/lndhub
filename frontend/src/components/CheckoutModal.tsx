@@ -11,6 +11,19 @@ import { CategoryIcon } from './CategoryIcon';
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(Math.max(0, value || 0)) + 'đ';
 
+const createIdempotencyKey = () => {
+  const bytes = new Uint8Array(18);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+};
+
+const formatRemainingTime = (seconds: number) => {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainder = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+};
+
 const getVariantQuantity = (variant?: ProductVariant) => {
   if (!variant) return null;
   const nameMatch = variant.name.trim().match(/^x\s*(\d+)$/i);
@@ -33,6 +46,7 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
   const [checkoutError, setCheckoutError] = useState('');
   const [copied, setCopied] = useState('');
   const [qrImageFailed, setQrImageFailed] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const firstVariant = product?.variants?.[0];
@@ -47,12 +61,33 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
     setConfirming(false);
     setCheckoutError('');
     setQrImageFailed(false);
-    if (typeof window !== 'undefined') {
-      const bytes = new Uint8Array(18);
-      window.crypto.getRandomValues(bytes);
-      setIdempotencyKey(Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join(''));
-    }
+    if (typeof window === 'undefined' || !product) return;
+    setIdempotencyKey(createIdempotencyKey());
+    const storageKey = `lndhub-active-order-${product._id}`;
+    const stored = window.sessionStorage.getItem(storageKey);
+    if (!stored) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const saved = JSON.parse(stored) as { orderCode?: string; lookupToken?: string };
+        if (!saved.orderCode || !saved.lookupToken) throw new Error('Invalid saved order');
+        const restoredOrder = await lookupOrder(saved.orderCode, saved.lookupToken);
+        if (cancelled) return;
+        setOrder(restoredOrder);
+        setLookupToken(saved.lookupToken);
+      } catch {
+        window.sessionStorage.removeItem(storageKey);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [product]);
+
+  useEffect(() => {
+    if (!order || order.paymentStatus !== 'PENDING' || order.customerReportedPaidAt) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [order]);
 
   useEffect(() => {
     if (!order || !lookupToken || order.fulfillmentStatus === 'FULFILLED' || order.paymentStatus === 'EXPIRED') return;
@@ -100,6 +135,20 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
   const availableQuantityOptions = isQuantityTierProduct ? tierVariants.map((item) => item.quantity) : [1, 2, 5, 10];
   const productVariants = product.variants || [];
   const showVariantSelector = !isQuantityTierProduct && productVariants.length > 1;
+  const remainingSeconds = order ? Math.max(0, Math.ceil((new Date(order.expiresAt).getTime() - now) / 1000)) : 0;
+  const orderIsExpired = Boolean(order && (
+    order.paymentStatus === 'EXPIRED'
+    || order.paymentStatus === 'CANCELLED'
+    || order.paymentStatus === 'FAILED'
+    || (!order.customerReportedPaidAt && order.paymentStatus === 'PENDING' && remainingSeconds <= 0)
+  ));
+  const orderIsComplete = order?.fulfillmentStatus === 'FULFILLED';
+  const canReportLatePayment = Boolean(orderIsExpired && !order?.customerReportedPaidAt);
+  const paymentInstructionsActive = Boolean(order && order.paymentStatus === 'PENDING' && !order.customerReportedPaidAt && !orderIsExpired);
+  const displayTotal = order?.totalPrice ?? total;
+  const displayQuantity = order?.quantity ?? quantity;
+  const displayUnitPrice = order?.unitPrice ?? unitPrice;
+  const displayPriceText = displayTotal > 0 ? formatMoney(displayTotal) : 'Chờ cập nhật';
   const informationItems = (product.information?.length ? product.information : product.features?.length ? product.features : [product.description]).filter(Boolean);
   const sections = [
     { value: 'information', icon: Info, title: 'Thông tin sản phẩm', items: informationItems },
@@ -139,6 +188,7 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
       setLookupToken(result.lookupToken);
       setQrImageFailed(false);
       window.sessionStorage.setItem(`lndhub-order-${result.order.orderCode}`, result.lookupToken);
+      window.sessionStorage.setItem(`lndhub-active-order-${product._id}`, JSON.stringify({ orderCode: result.order.orderCode, lookupToken: result.lookupToken }));
       setConfirming(false);
       window.setTimeout(() => document.querySelector('.bank-transfer-sheet')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     } catch (error) {
@@ -170,6 +220,29 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
     }
   };
 
+  const refreshOrder = async () => {
+    if (!order || !lookupToken) return;
+    setSubmitting(true);
+    setCheckoutError('');
+    try {
+      setOrder(await lookupOrder(order.orderCode, lookupToken));
+    } catch (error) {
+      setCheckoutError((error as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const startNewOrder = () => {
+    window.sessionStorage.removeItem(`lndhub-active-order-${product._id}`);
+    setOrder(null);
+    setLookupToken('');
+    setCheckoutError('');
+    setQrImageFailed(false);
+    setNow(Date.now());
+    setIdempotencyKey(createIdempotencyKey());
+  };
+
   return (
     <Modal
       opened={Boolean(product)}
@@ -191,9 +264,9 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
         </div>
         <div className="modal-price" aria-live="polite">
           <span>Tổng dự kiến</span>
-          <strong>{priceText}</strong>
-          {hasSale && <del>{formatMoney(originalTotal)}</del>}
-          <small>{quantity} × {unitPrice > 0 ? formatMoney(unitPrice) : 'chưa có giá'}</small>
+          <strong>{displayPriceText}</strong>
+          {hasSale && !order && <del>{formatMoney(originalTotal)}</del>}
+          <small>{displayQuantity} × {displayUnitPrice > 0 ? formatMoney(displayUnitPrice) : 'chưa có giá'}</small>
         </div>
       </div>
 
@@ -213,7 +286,7 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
           </Accordion>
         </section>
 
-        {showVariantSelector && (
+        {showVariantSelector && !order && (
           <section className="variant-selector" aria-labelledby="variant-selector-title">
             <div className="variant-selector__title"><PackageCheck size={19} aria-hidden="true" /><div><strong id="variant-selector-title">Lựa chọn sản phẩm</strong><span>Giá và tồn kho được quản lý riêng theo từng lựa chọn.</span></div></div>
             <div className="variant-grid" role="radiogroup" aria-label="Lựa chọn sản phẩm">
@@ -227,13 +300,13 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
           </section>
         )}
 
-        <section className="coupon-preview">
+        {!order && <section className="coupon-preview">
           <span className="coupon-preview__icon"><Gift size={19} aria-hidden="true" /></span>
           <div><strong>Mã giảm giá</strong><span>Sẽ được mở cùng hệ thống thanh toán chính thức.</span></div>
           <span className="soon-badge">Sắp có</span>
-        </section>
+        </section>}
 
-        <section className="modal-section modal-section--quantity">
+        {!order && <section className="modal-section modal-section--quantity">
           <div className="modal-section__heading">
             <span>1</span>
             <div><h3>Số lượng</h3><p>Chọn nhanh mức có sẵn hoặc nhập số lượng mong muốn.</p></div>
@@ -258,7 +331,7 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
             <button type="button" onClick={() => selectQuantity(quantity + 1)} aria-label="Tăng số lượng"><Plus size={18} aria-hidden="true" /></button>
           </div>
           <div className="quantity-summary"><BadgeCheck size={17} aria-hidden="true" /><span>Đang chọn <strong>×{quantity}</strong></span><span className="quantity-summary__price">{priceText}</span></div>
-        </section>
+        </section>}
 
         {!order && (
           <section className="modal-section payment-method-section" aria-labelledby="payment-method-title">
@@ -291,11 +364,11 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
             </header>
 
             <div className="bank-payment-status">
-              <strong>{order.fulfillmentStatus === 'FULFILLED' ? 'Đã giao hàng' : order.paymentStatus === 'PAID' ? 'Đã nhận tiền · đang giao hàng' : order.customerReportedPaidAt ? 'Đang chờ admin kiểm tra giao dịch' : 'Đang chờ chuyển khoản'}</strong>
-              <span>{order.fulfillmentStatus === 'FULFILLED' ? 'Nội dung giao hàng đã được mở khóa bên dưới.' : order.customerReportedPaidAt ? 'Trang tự cập nhật mỗi 5 giây, anh không cần tải lại.' : 'Đơn có hiệu lực trong 30 phút.'}</span>
+              <strong>{order.fulfillmentStatus === 'FULFILLED' ? 'Đã giao hàng' : order.paymentStatus === 'PAID' ? 'Đã nhận tiền · đang giao hàng' : orderIsExpired ? 'Mã thanh toán đã hết hạn' : order.customerReportedPaidAt ? 'Đang chờ admin kiểm tra giao dịch' : 'Đang chờ chuyển khoản'}</strong>
+              <span>{order.fulfillmentStatus === 'FULFILLED' ? 'Nội dung giao hàng đã được mở khóa bên dưới.' : order.paymentStatus === 'PAID' ? 'Admin đã xác nhận tiền vào tài khoản.' : orderIsExpired ? 'Không chuyển tiền bằng mã này. Hãy tạo mã mới với giá và tồn kho hiện tại.' : order.customerReportedPaidAt ? 'Đừng chuyển thêm lần nữa. Trang tự cập nhật mỗi 5 giây.' : <>Mã QR còn hiệu lực <b>{formatRemainingTime(remainingSeconds)}</b>.</>}</span>
             </div>
 
-            <div className="bank-qr">
+            {paymentInstructionsActive ? <><div className="bank-qr">
               {!qrImageFailed && order.vietQrUrl ? (
                 <>
                   <Image
@@ -333,16 +406,29 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
                 ['Số tiền', formatMoney(order.totalPrice), 'amount'],
                 ['Nội dung', order.paymentTransferContent, 'content'],
               ].map(([label, value, key]) => <div key={key}><dt>{label}</dt><dd>{value}</dd><button type="button" onClick={() => void copyText(key, value)}><Copy size={14} /> {copied === key ? 'Đã chép' : 'Chép'}</button></div>)}
-            </dl>
+            </dl></> : (
+              <div className={'bank-payment-lock' + (orderIsExpired ? ' bank-payment-lock--expired' : '')}>
+                {orderIsExpired ? <AlertTriangle size={25} aria-hidden="true" /> : <ShieldCheck size={25} aria-hidden="true" />}
+                <div>
+                  <strong>{orderIsExpired ? 'QR đã được khóa để tránh chuyển nhầm' : order.paymentStatus === 'PAID' ? 'Đã xác nhận thanh toán' : 'Đã gửi yêu cầu kiểm tra'}</strong>
+                  <p>{orderIsExpired ? order.customerReportedPaidAt ? 'Thời gian đối soát tự động đã kết thúc. Hãy liên hệ hỗ trợ nếu tiền đã được trừ.' : 'Nếu anh đã chuyển trước khi đồng hồ hết giờ, hãy báo giao dịch đến trễ. Nếu chưa chuyển, hãy tạo mã mới.' : order.paymentStatus === 'PAID' ? 'Không chuyển thêm tiền cho đơn này.' : 'Admin đang đối chiếu tài khoản ngân hàng. Không quét hoặc chuyển lại lần hai.'}</p>
+                </div>
+              </div>
+            )}
 
             {order.deliveryContent ? (
               <div className="delivery-result"><BadgeCheck size={20} /><div><strong>Thông tin nhận hàng</strong><p>Chỉ hiển thị trong phiên tra cứu riêng của đơn này.</p></div><pre>{order.deliveryContent}</pre><button type="button" onClick={() => void copyText('delivery', order.deliveryContent)}><Copy size={15} /> {copied === 'delivery' ? 'Đã chép' : 'Sao chép nội dung'}</button></div>
-            ) : (
+            ) : orderIsExpired ? (
+              <div className="bank-expired-actions">
+                {canReportLatePayment && <button type="button" onClick={() => void notifyTransferred()} disabled={submitting}><BadgeCheck size={18} /> Tôi đã chuyển trước khi hết hạn</button>}
+                <button type="button" onClick={startNewOrder}><Clock3 size={18} /> Tạo mã thanh toán mới</button>
+              </div>
+            ) : order.paymentStatus === 'PAID' || order.customerReportedPaidAt ? null : (
               <div className="bank-confirm-actions">
                 <p><AlertTriangle size={17} /> Bấm bên dưới sau khi ngân hàng báo chuyển thành công. Thao tác này chỉ gửi yêu cầu kiểm tra, không tự xác nhận đã thanh toán.</p>
-                <button type="button" onClick={() => void notifyTransferred()} disabled={submitting || Boolean(order.customerReportedPaidAt) || order.paymentStatus === 'PAID'}>
+                <button type="button" onClick={() => void notifyTransferred()} disabled={submitting}>
                   {submitting ? <LoaderCircle className="animate-spin" size={18} /> : <BadgeCheck size={18} />}
-                  {order.paymentStatus === 'PAID' ? 'Admin đã xác nhận tiền' : order.customerReportedPaidAt ? 'Đã báo admin kiểm tra' : 'Tôi đã chuyển khoản'}
+                  Tôi đã chuyển khoản
                 </button>
               </div>
             )}
@@ -353,12 +439,16 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
       </div>
 
       <div className="modal-sticky-footer">
-        <div><span>Tổng cộng</span><strong>{priceText}</strong><small>{quantity} sản phẩm</small></div>
-        <button type="button" disabled={availability.isResting || !isAvailable || total <= 0 || submitting || Boolean(order)} onClick={() => setConfirming(true)}>
-          {availability.isResting
-            ? <><Clock3 size={19} aria-hidden="true" /> Tạm nghỉ, mở lại {availability.reopensLabel.replace('Mở lại lúc ', '')}</>
-            : order
-              ? <><BadgeCheck size={19} aria-hidden="true" /> Theo dõi đơn {order.orderCode}</>
+        <div><span>Tổng cộng</span><strong>{displayPriceText}</strong><small>{displayQuantity} sản phẩm</small></div>
+        <button type="button" disabled={submitting || (!order && (availability.isResting || !isAvailable || total <= 0))} onClick={order ? (orderIsExpired || orderIsComplete ? startNewOrder : () => void refreshOrder()) : () => setConfirming(true)}>
+          {order
+            ? orderIsExpired
+              ? <><Clock3 size={19} aria-hidden="true" /> Tạo mã thanh toán mới</>
+              : orderIsComplete
+                ? <><PackageCheck size={19} aria-hidden="true" /> Mua lại sản phẩm</>
+                : <>{submitting ? <LoaderCircle className="animate-spin" size={19} /> : <BadgeCheck size={19} aria-hidden="true" />} Kiểm tra trạng thái đơn</>
+            : availability.isResting
+              ? <><Clock3 size={19} aria-hidden="true" /> Tạm nghỉ, mở lại {availability.reopensLabel.replace('Mở lại lúc ', '')}</>
               : <><Landmark size={19} aria-hidden="true" /> Tạo mã chuyển khoản</>}
         </button>
       </div>
@@ -370,7 +460,7 @@ export function CheckoutModal({ product, availability, onClose }: { product: Pro
             <small>LƯU Ý TRƯỚC KHI CHUYỂN KHOẢN</small>
             <h3 id="checkout-confirm-title">Kiểm tra đơn hàng</h3>
             <ul>
-              <li>Chỉ chuyển đúng <strong>{priceText}</strong> và đúng nội dung do hệ thống tạo.</li>
+              <li>Chỉ chuyển đúng <strong>{displayPriceText}</strong> và đúng nội dung do hệ thống tạo.</li>
               <li>Không dùng tài khoản mới tạo hoặc mua hộ nếu sản phẩm có điều kiện kích hoạt riêng.</li>
               <li>Admin chỉ giao hàng sau khi tiền thực tế vào tài khoản.</li>
             </ul>

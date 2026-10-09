@@ -1,4 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 import { ProductsService } from '../products/products.service';
 import { OrdersService } from '../orders/orders.service';
 import { FulfillOrderDto } from '../orders/dto/orders.dto';
@@ -11,6 +13,11 @@ import { CreateAnnouncementDto, UpdateAnnouncementDto, UpdateStoreSettingsDto } 
 import { GiftsService } from '../gifts/gifts.service';
 import { ImportGiftItemsDto, UpdateGiftCampaignDto } from '../gifts/dto/gifts.dto';
 import { ImportKeysDto } from './dto/inventory.dto';
+import { ChatService } from '../chat/chat.service';
+import { SendChatMessageDto, UpdateChatStatusDto } from '../chat/dto/chat.dto';
+import { isAes256Key } from '../../config/validate-env';
+
+type AdminRequest = Request & { admin?: { email?: string } };
 
 @Controller('api/admin')
 @UseGuards(AdminAuthGuard)
@@ -22,30 +29,59 @@ export class AdminController {
     private keysService: KeysService,
     private storefrontService: StorefrontService,
     private giftsService: GiftsService,
+    private chatService: ChatService,
+    private configService: ConfigService,
   ) {}
+
+  @Get('chat/conversations')
+  async getChatConversations() {
+    return { success: true, data: await this.chatService.listAdminConversations() };
+  }
+
+  @Get('chat/conversations/:id')
+  async getChatConversation(@Param('id') id: string) {
+    return { success: true, data: await this.chatService.getAdminConversation(id) };
+  }
+
+  @Post('chat/conversations/:id/messages')
+  async sendChatMessage(@Param('id') id: string, @Body() body: SendChatMessageDto) {
+    return { success: true, data: await this.chatService.sendAdminMessage(id, body.body) };
+  }
+
+  @Put('chat/conversations/:id/status')
+  async updateChatStatus(@Param('id') id: string, @Body() body: UpdateChatStatusDto) {
+    return { success: true, data: await this.chatService.updateStatus(id, body.status) };
+  }
 
   @Get('stats')
   async getStats() {
-    const orders = await this.ordersService.getAllOrders();
-    const products = await this.productsService.findAllAdmin();
-    const categories = await this.categoriesService.findAll();
-    const inventory = await this.keysService.getAllInventory();
-
-    const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID' || o.status === 'PAID');
-    const totalRevenue = paidOrders.reduce((acc, cur) => acc + (cur.totalPrice || 0), 0);
-    const availableKeys = inventory.filter((k) => k.status === 'AVAILABLE').length;
+    const [orders, orderSummary, productSummary, categorySummary, availableKeysCount] = await Promise.all([
+      this.ordersService.getAllOrders(),
+      this.ordersService.getAdminSummary(),
+      this.productsService.getAdminCounts(),
+      this.categoriesService.getAdminCounts(),
+      this.keysService.getAvailableTotal(),
+    ]);
+    const checkoutEnabled = this.configService.get<string>('ENABLE_CHECKOUT', 'false').toLowerCase() === 'true';
+    const bankConfigured = ['BANK_ID', 'BANK_NAME', 'ACCOUNT_NO', 'ACCOUNT_NAME']
+      .every((name) => Boolean(this.configService.get<string>(name, '').trim()));
+    const encryptionConfigured = (
+      ['ORDER_LOOKUP_SECRET', 'DELIVERY_ENCRYPTION_KEY']
+        .every((name) => this.configService.get<string>(name, '').trim().length >= 32)
+      && isAes256Key(this.configService.get<string>('GIFT_ENCRYPTION_KEY', ''))
+      && isAes256Key(this.configService.get<string>('INVENTORY_ENCRYPTION_KEY', ''))
+    );
 
     return {
       success: true,
       data: {
-        totalOrders: orders.length,
-        paidOrdersCount: paidOrders.length,
-        totalRevenue,
-        totalProducts: products.length,
-        publishedProductsCount: products.filter((product) => product.status === 'PUBLISHED').length,
-        draftProductsCount: products.filter((product) => product.status === 'DRAFT').length,
-        activeCategoriesCount: categories.filter((category) => category.isActive).length,
-        availableKeysCount: availableKeys,
+        ...orderSummary,
+        ...productSummary,
+        ...categorySummary,
+        availableKeysCount,
+        checkoutEnabled,
+        bankConfigured,
+        encryptionConfigured,
         recentOrders: orders.slice(0, 10),
       },
     };
@@ -126,14 +162,20 @@ export class AdminController {
   }
 
   @Post('orders/:orderCode/confirm-payment')
-  async markOrderPaid(@Param('orderCode') orderCode: string) {
-    const order = await this.ordersService.completeOrder(orderCode);
+  async markOrderPaid(@Param('orderCode') orderCode: string, @Req() request: AdminRequest) {
+    const order = await this.ordersService.completeOrder(orderCode, request.admin?.email || 'authenticated admin');
     return { success: true, data: { orderCode: order.orderCode, paymentStatus: order.paymentStatus, fulfillmentStatus: order.fulfillmentStatus } };
   }
 
   @Post('orders/:orderCode/fulfill')
-  async fulfillOrder(@Param('orderCode') orderCode: string, @Body() body: FulfillOrderDto) {
-    const order = await this.ordersService.fulfillOrder(orderCode, body.deliveryContent);
+  async fulfillOrder(@Param('orderCode') orderCode: string, @Body() body: FulfillOrderDto, @Req() request: AdminRequest) {
+    const order = await this.ordersService.fulfillOrder(orderCode, body.deliveryContent, request.admin?.email || 'authenticated admin');
+    return { success: true, data: { orderCode: order.orderCode, paymentStatus: order.paymentStatus, fulfillmentStatus: order.fulfillmentStatus } };
+  }
+
+  @Post('orders/:orderCode/cancel')
+  async cancelOrder(@Param('orderCode') orderCode: string, @Req() request: AdminRequest) {
+    const order = await this.ordersService.cancelOrder(orderCode, request.admin?.email || 'authenticated admin');
     return { success: true, data: { orderCode: order.orderCode, paymentStatus: order.paymentStatus, fulfillmentStatus: order.fulfillmentStatus } };
   }
 

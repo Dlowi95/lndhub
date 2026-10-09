@@ -292,31 +292,44 @@ export class OrdersService {
       throw new UnauthorizedException('Mã tra cứu không hợp lệ');
     }
     if (order.paymentStatus === PaymentStatus.PAID) return this.publicOrder(order);
-    if (order.paymentStatus !== PaymentStatus.PENDING) {
+    const now = new Date();
+    const lateReportDeadline = order.expiresAt
+      ? order.expiresAt.getTime() + 24 * 60 * 60 * 1000
+      : 0;
+    const canReportLatePayment = (
+      order.paymentStatus === PaymentStatus.EXPIRED
+      && !order.customerReportedPaidAt
+      && now.getTime() <= lateReportDeadline
+    );
+    if (order.paymentStatus !== PaymentStatus.PENDING && !canReportLatePayment) {
       throw new BadRequestException('Đơn hàng không còn chờ thanh toán');
     }
     if (!order.customerReportedPaidAt) {
-      order.customerReportedPaidAt = new Date();
-      order.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      order.customerReportedPaidAt = now;
+      order.status = OrderStatus.PENDING;
+      order.paymentStatus = PaymentStatus.PENDING;
+      order.expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       order.auditTrail.push({
-        type: 'CUSTOMER_REPORTED_PAYMENT',
+        type: canReportLatePayment ? 'CUSTOMER_REPORTED_LATE_PAYMENT' : 'CUSTOMER_REPORTED_PAYMENT',
         at: order.customerReportedPaidAt,
-        note: 'Awaiting bank verification; not treated as paid',
+        note: canReportLatePayment
+          ? 'Reported after QR expiry; awaiting manual bank verification'
+          : 'Awaiting bank verification; not treated as paid',
       });
       await order.save();
     }
     return this.publicOrder(order);
   }
 
-  async completeOrder(orderCode: string): Promise<Order> {
+  async completeOrder(orderCode: string, actor = 'authenticated admin'): Promise<Order> {
     const order = await this.orderModel.findOne({ orderCode: orderCode.toUpperCase() }).exec();
     if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
-    if (order.paymentStatus === PaymentStatus.PAID && order.fulfillmentStatus === FulfillmentStatus.FULFILLED) return order;
+    if (order.paymentStatus === PaymentStatus.PAID) return order;
 
     order.status = OrderStatus.PAID;
     order.paymentStatus = PaymentStatus.PAID;
     order.paidAt = order.paidAt || new Date();
-    order.auditTrail.push({ type: 'PAYMENT_CONFIRMED_MANUALLY', at: new Date(), note: 'Confirmed by authenticated admin' });
+    order.auditTrail.push({ type: 'PAYMENT_CONFIRMED_MANUALLY', at: new Date(), note: `Confirmed by ${actor}` });
 
     const product = await this.productsService.findById(order.productId);
     if (!product || product.fulfillmentType !== FulfillmentType.API_KEY) {
@@ -343,7 +356,7 @@ export class OrdersService {
     return order.save();
   }
 
-  async fulfillOrder(orderCode: string, deliveryContent: string): Promise<Order> {
+  async fulfillOrder(orderCode: string, deliveryContent: string, actor = 'authenticated admin'): Promise<Order> {
     const order = await this.orderModel.findOne({ orderCode: orderCode.toUpperCase() }).exec();
     if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
     if (order.paymentStatus !== PaymentStatus.PAID) {
@@ -357,23 +370,43 @@ export class OrdersService {
     order.deliveryAuthTag = encrypted.authTag;
     order.deliveredKeys = [];
     order.fulfillmentStatus = FulfillmentStatus.FULFILLED;
-    order.auditTrail.push({ type: 'FULFILLMENT_COMPLETED_MANUALLY', at: new Date(), note: 'Encrypted delivery saved by admin' });
+    order.auditTrail.push({ type: 'FULFILLMENT_COMPLETED_MANUALLY', at: new Date(), note: `Encrypted delivery saved by ${actor}` });
     return order.save();
   }
 
-  async cancelOrder(orderCode: string): Promise<Order> {
+  async cancelOrder(orderCode: string, actor = 'authenticated admin'): Promise<Order> {
     const order = await this.orderModel.findOne({ orderCode: orderCode.toUpperCase() }).exec();
     if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
     if (order.paymentStatus === PaymentStatus.PAID) throw new BadRequestException('Không thể hủy đơn đã thanh toán');
     order.status = OrderStatus.CANCELLED;
     order.paymentStatus = PaymentStatus.CANCELLED;
-    order.auditTrail.push({ type: 'ORDER_CANCELLED', at: new Date() });
+    order.auditTrail.push({ type: 'ORDER_CANCELLED', at: new Date(), note: `Cancelled by ${actor}` });
     return order.save();
   }
 
   async getAllOrders(): Promise<Order[]> {
     await this.expireStaleOrders();
-    return this.orderModel.find().sort({ createdAt: -1 }).limit(100).exec();
+    return this.orderModel.find().sort({ createdAt: -1 }).limit(200).exec();
+  }
+
+  async getAdminSummary() {
+    await this.expireStaleOrders();
+    const paidFilter = { $or: [{ paymentStatus: PaymentStatus.PAID }, { status: OrderStatus.PAID }] };
+    const [totalOrders, paidOrdersCount, paymentReviewCount, revenueRows] = await Promise.all([
+      this.orderModel.countDocuments({}).exec(),
+      this.orderModel.countDocuments(paidFilter).exec(),
+      this.orderModel.countDocuments({ paymentStatus: PaymentStatus.PENDING, customerReportedPaidAt: { $exists: true } }).exec(),
+      this.orderModel.aggregate<{ totalRevenue: number }>([
+        { $match: paidFilter },
+        { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } },
+      ]).exec(),
+    ]);
+    return {
+      totalOrders,
+      paidOrdersCount,
+      paymentReviewCount,
+      totalRevenue: revenueRows[0]?.totalRevenue || 0,
+    };
   }
 
   private async expireStaleOrders(): Promise<void> {
@@ -387,6 +420,17 @@ export class OrdersService {
       {
         $set: { status: OrderStatus.EXPIRED, paymentStatus: PaymentStatus.EXPIRED },
         $push: { auditTrail: { type: 'ORDER_EXPIRED', at: now, note: 'Payment window elapsed' } },
+      },
+    ).exec();
+    await this.orderModel.updateMany(
+      {
+        paymentStatus: PaymentStatus.PENDING,
+        customerReportedPaidAt: { $exists: true },
+        expiresAt: { $lte: now },
+      },
+      {
+        $set: { status: OrderStatus.EXPIRED, paymentStatus: PaymentStatus.EXPIRED },
+        $push: { auditTrail: { type: 'PAYMENT_REVIEW_EXPIRED', at: now, note: 'Manual bank verification window elapsed' } },
       },
     ).exec();
   }

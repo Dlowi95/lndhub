@@ -47,4 +47,12 @@ export class CategoriesService {
     const result = await this.categoryModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('Danh mục không tồn tại');
   }
+
+  async getAdminCounts() {
+    const [totalCategories, activeCategoriesCount] = await Promise.all([
+      this.categoryModel.countDocuments({}).exec(),
+      this.categoryModel.countDocuments({ isActive: true }).exec(),
+    ]);
+    return { totalCategories, activeCategoriesCount };
+  }
 }
